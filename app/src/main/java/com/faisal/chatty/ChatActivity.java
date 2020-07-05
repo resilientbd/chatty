@@ -1,6 +1,8 @@
 package com.faisal.chatty;
 
+import android.Manifest;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -10,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,6 +23,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.faisal.chatty.util.PermissionUtil;
+import com.faisal.chatty.util.SinchHelper;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -34,6 +39,14 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.sinch.android.rtc.PushPair;
+import com.sinch.android.rtc.Sinch;
+import com.sinch.android.rtc.SinchClient;
+import com.sinch.android.rtc.SinchError;
+import com.sinch.android.rtc.calling.Call;
+import com.sinch.android.rtc.calling.CallClient;
+import com.sinch.android.rtc.calling.CallClientListener;
+import com.sinch.android.rtc.calling.CallListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -43,7 +56,11 @@ import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class ChatActivity extends AppCompatActivity {
+import static com.faisal.chatty.util.Constrants.SnitchFlags.APP_KEY;
+import static com.faisal.chatty.util.Constrants.SnitchFlags.APP_SECRET;
+import static com.faisal.chatty.util.Constrants.SnitchFlags.ENVIRONMENT;
+
+public class ChatActivity extends AppCompatActivity  {
 
     private String mChatUser;
     TextView mUserName;
@@ -76,7 +93,10 @@ public class ChatActivity extends AppCompatActivity {
 
     private static final int GALLERY_PICK=1;
     StorageReference mImageStorage;
+    private ImageView callBtn;
+    private SinchClient sinchClient;
 
+    // private SinchHelper sinchHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,11 +117,13 @@ public class ChatActivity extends AppCompatActivity {
         actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
         actionBar.setDisplayHomeAsUpEnabled(true);
 
+
         //---INFLATING APP BAR LAYOUT INTO ACTION BAR----
         LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
         View actionBarView = inflater.inflate(R.layout.app_bar_layout,null);
         actionBar.setCustomView(actionBarView);
-
+        callBtn=actionBarView.findViewById(R.id.btnVideoCall);
+        disableVideoCall();
         //---ADDING DATA ON ACTION BAR----
         mUserName=(TextView) actionBarView.findViewById(R.id.textView3);
         mUserLastSeen = (TextView) actionBarView.findViewById(R.id.textView5);
@@ -136,8 +158,10 @@ public class ChatActivity extends AppCompatActivity {
                 Picasso.with(ChatActivity.this).load(imageValue).placeholder(R.drawable.user_img).into(mUserImage);
                 if(onlineValue.equals("true")){
                     mUserLastSeen.setText("online");
+                    enableVideoCall();
                 }
                 else{
+                    disableVideoCall();
                     GetTimeAgo getTimeAgo = new GetTimeAgo();
                     long lastTime = Long.parseLong(onlineValue);
                     String lastSeen = getTimeAgo.getTimeAgo(lastTime,getApplicationContext());
@@ -263,7 +287,33 @@ public class ChatActivity extends AppCompatActivity {
 
             }
         });
+        Toast.makeText(this,"currentUser: "+mCurrentUserId+" Chat User: "+mChatUser,Toast.LENGTH_LONG).show();
+        sinchClient = Sinch.getSinchClientBuilder()
+                .context(this)
+                .userId("rasel")
+                .applicationKey(APP_KEY)
+                .applicationSecret(APP_SECRET)
+                .environmentHost(ENVIRONMENT)
+                .build();
 
+        sinchClient.setSupportCalling(true);
+        sinchClient.startListeningOnActiveConnection();
+        sinchClient.start();
+
+        sinchClient.getCallClient().addCallClientListener(new SinchCallClientListener());
+
+        //sinchHelper=SinchHelper.getInstance("rasel", this,new SinchCallClientListener() );
+        //video call action
+        callBtn.setOnClickListener(v -> {
+//            Intent intent=new Intent(ChatActivity.this,CallActivity.class);
+//            startActivity(intent);
+            if (PermissionUtil.on(this).request(PermissionUtil.REQUEST_CODE_PERMISSION_CAMERA,
+                    Manifest.permission.RECORD_AUDIO,Manifest.permission.CALL_PHONE)) {
+               // sinchHelper.makeaVoiceCall("hasan",this);
+                sinchClient.getCallClient().callUser("hasan");
+            }
+
+        });
     }
 
    //---FIRST 10 MESSAGES WILL LOAD ON START----
@@ -315,7 +365,25 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+    //video call button enable
+    private void enableVideoCall()
+    {
+        if(callBtn!=null)
+        {
+            callBtn.setEnabled(true);
+            callBtn.setAlpha(1f);
+        }
 
+    }
+    //video call button disable
+    private void disableVideoCall()
+    {
+        if(callBtn!=null)
+        {
+            callBtn.setEnabled(false);
+            callBtn.setAlpha(0.5f);
+        }
+    }
     //---ON REFRESHING 10 MORE MESSAGES WILL LOAD----
     private void loadMoreMessages() {
 
@@ -448,6 +516,69 @@ public class ChatActivity extends AppCompatActivity {
        // mDatabaseReference.child(mCurrentUserId).child("online").setValue(ServerValue.TIMESTAMP);
 
     }
+
+//    @Override
+//    public void onIncomingCall(CallClient callClient, Call call) {
+//        Toast.makeText(this,"Incomming Call",Toast.LENGTH_LONG).show();
+//    }
+//
+//    @Override
+//    public void onCallProgressing(Call call) {
+//        Toast.makeText(this,"Progress Call",Toast.LENGTH_LONG).show();
+//    }
+//
+//    @Override
+//    public void onCallEstablished(Call call) {
+//        Toast.makeText(this,"Establish Call",Toast.LENGTH_LONG).show();
+//    }
+//
+//    @Override
+//    public void onCallEnded(Call call) {
+//        Toast.makeText(this,"End Call",Toast.LENGTH_LONG).show();
+//    }
+//
+//    @Override
+//    public void onShouldSendPushNotification(Call call, List<PushPair> list) {
+//        Toast.makeText(this,"Send Push",Toast.LENGTH_LONG).show();
+//    }
+
+    private class SinchCallClientListener implements CallClientListener {
+        @Override
+        public void onIncomingCall(CallClient callClient, Call incomingCall) {
+         //   call = incomingCall;
+            Toast.makeText(ChatActivity.this, "incoming call", Toast.LENGTH_SHORT).show();
+            incomingCall.answer();
+            incomingCall.addCallListener(new SinchCallListener());
+          //  button.setText("Hang Up");
+        }
+    }
+    private class SinchCallListener implements CallListener {
+        @Override
+        public void onCallEnded(Call endedCall) {
+         //   call = null;
+            SinchError a = endedCall.getDetails().getError();
+          //  button.setText("Call");
+          //  callState.setText("");
+            setVolumeControlStream(AudioManager.USE_DEFAULT_STREAM_TYPE);
+        }
+
+        @Override
+        public void onCallEstablished(Call establishedCall) {
+           // callState.setText("connected");
+            setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
+            Toast.makeText(ChatActivity.this, "call connected", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void onCallProgressing(Call progressingCall) {
+            Toast.makeText(ChatActivity.this, "call progressed", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void onShouldSendPushNotification(Call call, List<PushPair> pushPairs) {
+        }
+    }
+
 }
 
 
