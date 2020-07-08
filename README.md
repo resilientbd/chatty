@@ -2,7 +2,7 @@
 
 About the app: This app is a demostration of p2p video calling and chat between two users. The project is ongoing and will be available on playstore soon. 
 
-Application Demo Video [here]([https://www.youtube.com/watch?v=c5RCJSPuvBo](https://www.youtube.com/watch?v=c5RCJSPuvBo))
+Application Demo Video [here](https://www.youtube.com/watch?v=c5RCJSPuvBo)
 
 # Features:
 
