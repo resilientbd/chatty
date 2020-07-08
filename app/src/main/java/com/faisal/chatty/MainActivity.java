@@ -1,12 +1,16 @@
 package com.faisal.chatty;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -14,7 +18,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
 
+import com.etebarian.meowbottomnavigation.MeowBottomNavigation;
 import com.faisal.chatty.Fragments.MyFragmentPagerAdapter;
+import com.faisal.chatty.util.ProgressbarHandler;
+import com.faisal.chatty.video.BaseActivity;
+import com.faisal.chatty.video.SinchService;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.tabs.TabLayout;
@@ -23,19 +31,21 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
+import com.sinch.android.rtc.SinchError;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity implements SinchService.StartFailedListener  {
     private FirebaseAuth mauth;
     ViewPager mviewPager;
     MyFragmentPagerAdapter mFragmentPagerAdapter;
     TabLayout mtabLayout;
     DatabaseReference mDatabaseReference;
-
+    MeowBottomNavigation mBottomNavigation;
     //Toolbar mtoolbar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ProgressbarHandler.ShowLoadingProgress(this);
         mauth= FirebaseAuth.getInstance();
 
         mviewPager=(ViewPager)findViewById(R.id.viewPager);
@@ -49,6 +59,36 @@ public class MainActivity extends AppCompatActivity {
         mtabLayout.setupWithViewPager(mviewPager);
 
         mDatabaseReference = FirebaseDatabase.getInstance().getReference().child("users");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.READ_PHONE_STATE},100);
+        }
+//        mBottomNavigation=findViewById(R.id.meowBottomNavigation);
+//        initBottomNavigation();
+
+    }
+
+//    private void initBottomNavigation() {
+//        mBottomNavigation.add(new MeowBottomNavigation.Model(0,R.drawable.ic_call,));
+//        mBottomNavigation.add(new MeowBottomNavigation.Model(1,R.drawable.ic_call));
+//        mBottomNavigation.add(new MeowBottomNavigation.Model(2,R.drawable.ic_call));
+//        mBottomNavigation.add(new MeowBottomNavigation.Model(3,R.drawable.ic_call));
+//        mBottomNavigation.add(new MeowBottomNavigation.Model(4,R.drawable.ic_call));
+//
+//        mBottomNavigation.setOnClickMenuListener(T t)
+//
+//
+//    }
+
+    @Override
+    public void onConnectService() {
+        FirebaseUser user=mauth.getCurrentUser();
+        if(user!=null){
+            if (!getSinchServiceInterface().isStarted()) {
+                getSinchServiceInterface().startClient(mauth.getCurrentUser().getUid());
+               // Toast.makeText(MainActivity.this,"Sinch initialized!",Toast.LENGTH_LONG).show();
+            }
+        }
+        ProgressbarHandler.DismissProgress(this);
     }
 
     //----SHOWING ALERT DIALOG FOR EXITING THE APP----
@@ -62,6 +102,20 @@ public class MainActivity extends AppCompatActivity {
         builder.setNegativeButton("Cancel",null);
         builder.show();
 
+    }
+
+    @Override
+    public void onStartFailed(SinchError error) {
+        Toast.makeText(this, error.toString(), Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onStarted() {
+
+    }
+    @Override
+    protected void onServiceConnected() {
+        getSinchServiceInterface().setStartListener(this);
     }
     public class MyListener implements DialogInterface.OnClickListener{
 
@@ -82,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
         else{
             //---IF LOGIN , ADD ONLINE VALUE TO TRUE---
             mDatabaseReference.child(user.getUid()).child("online").setValue("true");
+
 
         }
     }
@@ -117,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
         if(item.getItemId()==R.id.allUsers){
             Intent intent=new Intent(MainActivity.this,UserActivity.class);
             startActivity(intent);
+
         }
 
         //---LOGGING OUT AND ADDING TIME_STAMP----

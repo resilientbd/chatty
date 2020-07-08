@@ -15,6 +15,12 @@ public class Constrants {
         public static final int INCOMMING_CALL=1;
         public static final int OUTGOING_CALL=2;
     }
+    public interface Intents{
+        public static final String SINCH_HANDLER="sinch_handler";
+        String USER_ID = "userid";
+        String USER_NAME = "username";
+        String USER_IMAGE = "userimg";
+    }
     public static String getDeviceId(Context context)
     {
         return  Settings.Secure.getString(context.getContentResolver(),Settings.Secure.ANDROID_ID);

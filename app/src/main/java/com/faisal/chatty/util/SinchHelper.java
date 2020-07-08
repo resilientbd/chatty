@@ -2,6 +2,7 @@ package com.faisal.chatty.util;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.sinch.android.rtc.ClientRegistration;
 import com.sinch.android.rtc.Sinch;
@@ -12,50 +13,46 @@ import com.sinch.android.rtc.calling.Call;
 import com.sinch.android.rtc.calling.CallClientListener;
 import com.sinch.android.rtc.calling.CallListener;
 
+import java.io.Serializable;
 
-public class SinchHelper {
+import static com.faisal.chatty.util.Constrants.SnitchFlags.APP_KEY;
+import static com.faisal.chatty.util.Constrants.SnitchFlags.APP_SECRET;
+import static com.faisal.chatty.util.Constrants.SnitchFlags.ENVIRONMENT;
+
+
+public class SinchHelper implements Serializable {
     private SinchClient sinchClient;
     private Call call;
     private String TAG = "snitchlogger";
     private static SinchHelper sinchHelper;
     private CallClientListener callClientListener;
-
+    private CallStateUpdater callStateUpdater;
     private SinchHelper(String userid,Context context, CallClientListener callClientListener) {
-        sinchClient = Sinch.getSinchClientBuilder().context(context)
-                .applicationKey(Constrants.SnitchFlags.APP_KEY)
-                .applicationSecret(Constrants.SnitchFlags.APP_SECRET)
-                .environmentHost(Constrants.SnitchFlags.ENVIRONMENT)
+        sinchClient = Sinch.getSinchClientBuilder()
+                .context(context)
                 .userId(userid)
+                .applicationKey(APP_KEY)
+                .applicationSecret(APP_SECRET)
+                .environmentHost(ENVIRONMENT)
                 .build();
-        this.callClientListener=callClientListener;
-        // Specify the client capabilities.
+
         sinchClient.setSupportCalling(true);
-        sinchClient.setSupportManagedPush(true);
-        sinchClient.addSinchClientListener(new SinchClientListener() {
-
-            public void onClientStarted(SinchClient client) {
-                Log.d(TAG, "client started!");
-            }
-
-            public void onClientStopped(SinchClient client) {
-                Log.d(TAG, "client stopped!");
-            }
-
-            public void onClientFailed(SinchClient client, SinchError error) {
-                Log.d(TAG, "client failed!");
-            }
-
-            public void onRegistrationCredentialsRequired(SinchClient client, ClientRegistration registrationCallback) {
-                Log.d(TAG, "client registration credential required! " + registrationCallback.toString());
-            }
-
-            public void onLogMessage(int level, String area, String message) {
-                Log.d(TAG, "client log message: " + message);
-            }
-        });
+        sinchClient.startListeningOnActiveConnection();
+        if(!sinchClient.isStarted())
+        {
+            sinchClient.start();
+            Toast.makeText(context,"Sinch Started!",Toast.LENGTH_LONG).show();
+        }
+        else {
+            Toast.makeText(context,"Sinch Already Started!",Toast.LENGTH_LONG).show();
+        }
 
         sinchClient.getCallClient().addCallClientListener(callClientListener);
-        sinchClient.start();
+     //   sinchClient.start();
+    }
+
+    public CallClientListener getCallClientListener() {
+        return callClientListener;
     }
 
     public SinchClient getSinchClient() {
@@ -67,6 +64,10 @@ public class SinchHelper {
             sinchHelper = new SinchHelper(userid,context, callClientListener);
         }
         return sinchHelper;
+    }
+
+    public void setCallStateUpdater(CallStateUpdater callStateUpdater) {
+        this.callStateUpdater = callStateUpdater;
     }
 
     public void setCall(Call call) {
@@ -98,8 +99,7 @@ public class SinchHelper {
     }
     public void answerCall()
     {
-        if(call!=null)
-        {
+
             try
             {
                 call.answer();
@@ -107,7 +107,10 @@ public class SinchHelper {
             {
                 Log.d(TAG,"Recieve Error: "+e.getMessage());
             }
-        }
+
+    }
+    public void rejectCall(){
+        call.hangup();
     }
     public void makeaVoiceCall(String userid, CallListener callListener)
     {
@@ -116,5 +119,14 @@ public class SinchHelper {
             call.addCallListener(callListener);
 
 
+    }
+    public void makeaVideoCall(String userid, CallListener callListener)
+    {
+       call=sinchClient.getCallClient().callUserVideo(userid);
+       call.addCallListener(callListener);
+    }
+
+    public interface CallStateUpdater{
+        public void onCallConnected();
     }
 }

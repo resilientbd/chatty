@@ -3,6 +3,7 @@ package com.faisal.chatty.Fragments;
     IN THIS FRAGMENT A RECYCLER VIEW HOLDS THE DETAILS OF ALL FRIENDS
  */
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.faisal.chatty.ChatActivity;
 import com.faisal.chatty.ProfileActivity;
 import com.faisal.chatty.R;
+import com.faisal.chatty.util.PermissionUtil;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -129,11 +131,14 @@ public class FriendFragment extends Fragment {
                                             startActivity(intent);
                                         }
 
-                                        if(which == 1){
-                                            Intent intent = new Intent(getContext(), ChatActivity.class);
-                                            intent.putExtra("user_id",list_user_id);
-                                            intent.putExtra("user_name",userName);
-                                            startActivity(intent);
+                                        if(which == 1) {
+                                            if (PermissionUtil.on(getActivity()).request(PermissionUtil.REQUEST_CODE_PERMISSION_CAMERA,
+                                                    Manifest.permission.RECORD_AUDIO, Manifest.permission.CALL_PHONE, Manifest.permission.CAMERA)) {
+                                                Intent intent = new Intent(getContext(), ChatActivity.class);
+                                                intent.putExtra("user_id", list_user_id);
+                                                intent.putExtra("user_name", userName);
+                                                startActivity(intent);
+                                            }
                                         }
 
                                     }
