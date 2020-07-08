@@ -17,7 +17,7 @@
 
         >
         <activity
-            android:name=".MainActivity"
+            android:name=".main.MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -26,20 +26,19 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".LoginActivity"
+            android:name=".login.LoginActivity"
             android:theme="@style/AppTheme2" />
         <activity
-            android:name=".RegisterActivity"
+            android:name=".register.RegisterActivity"
             android:theme="@style/AppTheme2" />
         <activity
-            android:name=".SettingActivity"
+            android:name=".setting.SettingActivity"
             android:theme="@style/AppTheme2" />
-        <activity android:name=".StatusActivity" />
+        <activity android:name=".status.StatusActivity" />
         <activity android:name="com.theartofdev.edmodo.cropper.CropImageActivity" />
-        <activity android:name=".UserActivity" />
-        <activity android:name=".CallActivity"/>
+        <activity android:name=".user.UserActivity" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".profile.ProfileActivity"
             android:theme="@style/AppTheme2">
             <intent-filter>
                 <action android:name="com.example.singhkshitiz.letschat_TARGET_NOTIFICATION" />
@@ -47,25 +46,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <activity android:name=".VideoCallActivity"/>
         <activity
-            android:name=".ChatActivity"
-            android:parentActivityName=".MainActivity"
+            android:name=".chat.ChatActivity"
+            android:parentActivityName=".main.MainActivity"
             android:screenOrientation="portrait"></activity>
-        <service android:name="com.faisal.chatty.video.SinchService"/>
-        <activity android:name="com.faisal.chatty.video.MainActivity">
-            <!--<intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+        <service android:name="com.faisal.util.remote.SinchService"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>-->
-        </activity>
-        <activity android:name="com.faisal.chatty.video.CallScreenActivity"/>
+        <activity android:name=".callscreen.CallScreenActivity"/>
 
-        <activity android:name="com.faisal.chatty.video.IncomingCallScreenActivity" android:screenOrientation="portrait"
+        <activity android:name=".incommingcallscreen.IncomingCallScreenActivity" android:screenOrientation="portrait"
             android:noHistory="true"/>
 
-        <activity android:name="com.faisal.chatty.video.PlaceCallActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".placecall.PlaceCallActivity" android:screenOrientation="portrait"/>
     </application>
 
 </manifest>
